@@ -93,6 +93,10 @@ Or download the `.dmg` from [the latest release](https://github.com/brandonlucas
 
 More on the tap, and what `brew uninstall` cannot clean up, in [docs/homebrew.md](docs/homebrew.md).
 
+## iPhone companion
+
+Install the optional PWA from Safari to triage the same GitHub, Linear, ntfy and local-agent queue on your iPhone. The free direct Mac build owns the live data and credentials. A separate sample inbox works before you connect any accounts. [Installation and private pairing](companion/README.md)
+
 ## Building
 
 Inbox & Chill uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate its Xcode project from `project.yml`, so the `.xcodeproj` itself isn't committed.
