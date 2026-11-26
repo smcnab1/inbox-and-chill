@@ -282,6 +282,7 @@ if ('serviceWorker' in navigator)
     .then(() => navigator.serviceWorker.ready)
     .then((reg) => {
       registration = reg;
+      if ($('preferences').open && data) preferences();
     })
     .catch(() => {});
 function preferences() {
@@ -307,24 +308,44 @@ $('push').onclick = async () => {
       data.subscribed = false;
       await (await registration.pushManager.getSubscription())?.unsubscribe();
     } else {
-      if ((await Notification.requestPermission()) !== 'granted')
-        throw new Error('Allow notifications in system settings to receive push.');
       const key = Uint8Array.from(
         atob(data.publicKey.replaceAll('-', '+').replaceAll('_', '/')),
         (c) => c.charCodeAt(0),
       );
-      let sub = await registration.pushManager.getSubscription();
-      if (
-        sub &&
-        !new Uint8Array(sub.options.applicationServerKey).every((byte, i) => byte === key[i])
-      ) {
-        await sub.unsubscribe();
-        sub = null;
-      }
-      sub ||= await registration.pushManager.subscribe({
+      $('push-info').textContent = 'Connecting to the push service…';
+      // Safari needs subscribe() in the tap handler. It also handles the permission prompt.
+      const enrollment = registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: key,
       });
+      let timer;
+      let sub;
+      try {
+        sub = await Promise.race([
+          enrollment,
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    'Push registration timed out. Check connectivity and tap Enable push to retry.',
+                  ),
+                ),
+              45000,
+            );
+          }),
+        ]);
+      } catch (error) {
+        if (error.name === 'InvalidStateError') {
+          await (await registration.pushManager.getSubscription())?.unsubscribe();
+          throw new Error('The Mac signing key changed. Tap Enable push again to reconnect.');
+        }
+        if (error.name === 'NotAllowedError')
+          throw new Error('Allow notifications in system settings to receive push.');
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
       await api('subscribe', sub.toJSON());
       data.subscribed = true;
     }

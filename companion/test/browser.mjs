@@ -134,6 +134,21 @@ try {
       );
       if (name === 'desktop') {
         await context.grantPermissions(['notifications']);
+        await page.clock.install();
+        await page.evaluate(() => {
+          PushManager.prototype.subscribe = () => {
+            if (!navigator.userActivation.isActive) throw new Error('Lost the initiating tap');
+            return new Promise(() => {});
+          };
+        });
+        await page.getByRole('button', { name: 'Settings', exact: true }).click();
+        const enable = page.getByRole('button', { name: 'Enable push', exact: true });
+        await enable.click();
+        await page.getByText('Connecting to the push service…').waitFor();
+        await page.clock.fastForward(46000);
+        await page.getByText(/Push registration timed out/).waitFor();
+        assert.ok(await enable.isEnabled());
+        await page.getByRole('button', { name: 'Close settings' }).click();
         const cdp = await context.newCDPSession(page);
         const updated = once(cdp, 'ServiceWorker.workerRegistrationUpdated', {
           signal: AbortSignal.timeout(12000),
