@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8f6f0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Inbox &amp; Chill</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+    <link rel="icon" href="/icon-192.png" />
+    <link rel="stylesheet" href="/app.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <div class="wordmark"><img src="/icon-192.png" alt="" />Inbox &amp; Chill</div>
+        <button id="settings" hidden>Settings</button>
+      </div>
+    </header>
+    <main>
+      <section id="pair" hidden class="pair">
+        <div class="eyebrow">DEVICE PAIRING</div>
+        <h1>Pair with<br />your Mac<span>.</span></h1>
+        <p>Enter the single-use code from your Mac to open your private inbox.</p>
+        <form id="pair-form">
+          <label for="code">Pairing code</label
+          ><input
+            id="code"
+            required
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="xxxx-xxxx-xxxx-xxxx"
+          /><button class="primary">Pair device</button>
+        </form>
+      </section>
+      <section id="inbox" hidden>
+        <div class="hero">
+          <div>
+            <div class="eyebrow" id="mode"></div>
+            <h1 id="heading">Inbox<span>.</span></h1>
+          </div>
+          <div class="counter"><b id="count">0</b><span>unread</span></div>
+        </div>
+        <nav aria-label="Queue">
+          <button data-tab="Inbox" aria-pressed="true">Inbox</button
+          ><button data-tab="Snoozed">Snoozed</button><button data-tab="Archive">Archive</button>
+        </nav>
+        <div class="tools">
+          <label>Source<select id="source"></select></label
+          ><label id="repo-label">Repository<select id="repo"></select></label
+          ><button id="refresh">Refresh</button>
+        </div>
+        <div id="rows"></div>
+      </section>
+      <div id="message" role="status" aria-live="polite"></div>
+      <button id="retry" hidden>Try again</button>
+    </main>
+    <dialog id="detail">
+      <div class="sheet">
+        <button class="close" aria-label="Close details">Close</button>
+        <div id="detail-content"></div>
+      </div>
+    </dialog>
+    <dialog id="preferences">
+      <div class="sheet">
+        <button class="close" aria-label="Close settings">Close</button>
+        <div class="eyebrow">COMPANION</div>
+        <h2>Settings</h2>
+        <p id="push-info"></p>
+        <div class="actions">
+          <button id="push">Enable push</button><button id="test-push" hidden>Send test push</button
+          ><button id="signout">Unpair device</button>
+        </div>
+        <p class="fine">Inbox &amp; Chill · <a href="/LICENSE.txt">MIT licence</a></p>
+      </div>
+    </dialog>
+    <noscript>Enable JavaScript to use the companion.</noscript>
+  </body>
+</html>
