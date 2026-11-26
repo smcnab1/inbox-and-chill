@@ -188,6 +188,11 @@ final class AppState {
         // inert: the tests build their own stores and connectors.
         guard !DiagnosticsRecorder.isRunningTests else { return }
         Task {
+            #if !APP_STORE
+            if CommandLine.arguments.contains("--web-companion") {
+                await LocalListener.shared.useCompanionEngine(engine)
+            }
+            #endif
             await bootstrapConnectors()
             await refreshBadge()
             // Read-only: a blocked permission shows up in Settings before an

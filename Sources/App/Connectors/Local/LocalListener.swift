@@ -82,6 +82,7 @@ actor LocalListener {
     private struct LocalAPIInfo: Codable {
         var port: Int
         var token: String
+        var companionToken: String
     }
 
     private struct HTTPRequest {
@@ -103,13 +104,23 @@ actor LocalListener {
         var description: String { errorDescription ?? "LocalListener error" }
     }
 
-    private static let infoFileURL = URL.applicationSupportDirectory
-        .appending(path: "InboxAndChill/local-api.json")
+    private let infoFileURL: URL
+
+    init(infoFileURL: URL = URL.applicationSupportDirectory.appending(path: "InboxAndChill/local-api.json")) {
+        self.infoFileURL = infoFileURL
+    }
 
     private let queue = DispatchQueue(label: "lol.bgreen.inboxandchill.local-listener")
 
     private var listener: NWListener?
     private var token: String = ""
+    private var companionToken = ""
+    private var companionEngine: SyncEngine?
+
+    func useCompanionEngine(_ engine: SyncEngine) {
+        companionEngine = engine
+    }
+
     private var port: UInt16 = 0
     private var connections: [ObjectIdentifier: NWConnection] = [:]
     private var onNotify: (@Sendable (NotifyPayload) -> Void)?
@@ -177,6 +188,7 @@ actor LocalListener {
         // free — and it caps the useful life of a leaked token at one
         // app session.
         token = Self.randomToken()
+        companionToken = Self.randomToken()
 
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = NWEndpoint.hostPort(
@@ -234,7 +246,7 @@ actor LocalListener {
         // Remove the handshake file rather than leave it pointing at a dead
         // port: `inchill` then reports "Inbox & Chill isn't running" instead
         // of a confusing connection failure.
-        try? FileManager.default.removeItem(at: Self.infoFileURL)
+        try? FileManager.default.removeItem(at: infoFileURL)
     }
 
     // MARK: - Connection handling
@@ -287,6 +299,31 @@ actor LocalListener {
     }
 
     private func respond(to request: HTTPRequest, on connection: NWConnection) async {
+        if request.path == "/companion/items" || request.path == "/companion/action" {
+            guard !companionToken.isEmpty, request.headers["authorization"] == "Bearer \(companionToken)" else {
+                send(status: 401, statusText: "Unauthorized", json: "{}", on: connection)
+                return
+            }
+            guard let engine = companionEngine else {
+                send(status: 503, statusText: "Unavailable", json: "{}", on: connection)
+                return
+            }
+            do {
+                if request.method == "GET", request.path == "/companion/items" {
+                    let data = try await JSONEncoder().encode(engine.companionSnapshot())
+                    send(status: 200, statusText: "OK", json: String(decoding: data, as: UTF8.self), on: connection)
+                } else if request.method == "POST", request.path == "/companion/action",
+                    let action = try? JSONDecoder().decode(CompanionAction.self, from: request.body) {
+                    let status = try await engine.applyCompanionAction(action)
+                    send(status: status, statusText: "Action", json: "{}", on: connection)
+                } else {
+                    send(status: 400, statusText: "Bad Request", json: "{}", on: connection)
+                }
+            } catch {
+                send(status: 500, statusText: "Store unavailable", json: "{}", on: connection)
+            }
+            return
+        }
         guard !token.isEmpty, request.headers["authorization"] == "Bearer \(token)" else {
             send(status: 401, statusText: "Unauthorized", json: #"{"error":"unauthorized"}"#, on: connection)
             return
@@ -358,7 +395,7 @@ actor LocalListener {
 
         let contentLength = headers["content-length"].flatMap(Int.init) ?? 0
         let bodyStart = headerEnd.upperBound
-        guard buffer.count - bodyStart >= contentLength else { return nil }
+        guard (0...1_048_576).contains(contentLength), buffer.count - bodyStart >= contentLength else { return nil }
         let bodyEnd = buffer.index(bodyStart, offsetBy: contentLength)
         return HTTPRequest(
             method: method, path: path, headers: headers,
@@ -375,16 +412,16 @@ actor LocalListener {
     }
 
     private func writeInfoFile() throws {
-        let dir = Self.infoFileURL.deletingLastPathComponent()
+        let dir = infoFileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let info = LocalAPIInfo(port: Int(port), token: token)
+        let info = LocalAPIInfo(port: Int(port), token: token, companionToken: companionToken)
         let data = try JSONEncoder().encode(info)
         // createFile applies the permissions atomically with creation —
         // write-then-chmod would leave a default-umask window where another
         // local user could read the token.
-        try? FileManager.default.removeItem(at: Self.infoFileURL)
+        try? FileManager.default.removeItem(at: infoFileURL)
         guard FileManager.default.createFile(
-            atPath: Self.infoFileURL.path, contents: data,
+            atPath: infoFileURL.path, contents: data,
             attributes: [.posixPermissions: 0o600])
         else {
             throw CocoaError(.fileWriteUnknown)
