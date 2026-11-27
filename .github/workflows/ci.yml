@@ -41,8 +41,10 @@ jobs:
       run:
         working-directory: companion
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
       - run: npm ci
@@ -51,7 +53,7 @@ jobs:
       - run: npm run test:browser
         env:
           SCREENSHOTS: ${{ runner.temp }}/companion-screenshots
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: companion-screenshots
           path: ${{ runner.temp }}/companion-screenshots
@@ -66,7 +68,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
@@ -97,9 +101,10 @@ jobs:
     steps:
       # Full history: the Release-audit decision below diffs against the
       # base branch, and a shallow clone has no merge base to diff from.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Which Xcode a runner image ships changes over time, and a Swift
       # version difference between here and a contributor's Mac shows up as a
@@ -109,7 +114,7 @@ jobs:
       - name: Select Xcode
         run: |
           echo "Installed:"
-          ls -d /Applications/Xcode*.app | sed 's/^/    /'
+          printf '    %s\n' /Applications/Xcode*.app
           if [ -n "$XCODE_VERSION" ]; then
             SELECTED="/Applications/Xcode_${XCODE_VERSION}.app"
             [ -d "$SELECTED" ] || {
@@ -119,7 +124,7 @@ jobs:
           else
             # Newest by version, not by name order: sort -V puts Xcode_16.10
             # after Xcode_16.9, which a plain sort does not.
-            SELECTED=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+            SELECTED=$(printf '%s\n' /Applications/Xcode*.app | sort -V | tail -1)
           fi
           echo "Selected: $SELECTED"
           sudo xcode-select -s "$SELECTED/Contents/Developer"
@@ -146,7 +151,7 @@ jobs:
       # KeyboardShortcuts every time. Keyed on project.yml because that is
       # where the dependency versions are declared.
       - name: Cache Swift packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .spm
           key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
@@ -211,7 +216,7 @@ jobs:
 
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results
           path: TestResults.xcresult
@@ -244,7 +249,7 @@ jobs:
 
       - name: Upload App Store build log
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-store-build-log
           path: /tmp/inchill-appstore-build.log
@@ -253,7 +258,7 @@ jobs:
 
       # ------------------------------------------------------------------
       # Release-shaped build, audited for the traps that produce no build
-      # failure: a missing SUFeedURL, a version pinned to 1.0, an injected
+      # failure: upstream update settings, a version pinned to 1.0, an injected
       # get-task-allow, Sparkle moving its nested helpers.
       #
       # Not run on every pull request. It is a second full build of the same
@@ -275,7 +280,7 @@ jobs:
           git fetch --quiet origin "$BASE_REF"
           CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD")
           echo "Changed files:"
-          echo "$CHANGED" | sed 's/^/    /'
+          printf '%s\n' "$CHANGED"
           if echo "$CHANGED" | grep -qE '^(project\.yml|InboxAndChill\.entitlements|Sources/App/Resources/PrivacyInfo\.xcprivacy|scripts/|\.github/workflows/)'; then
             echo "Touches the build or signing configuration — auditing."
             echo "run=true" >> "$GITHUB_OUTPUT"
