@@ -33,14 +33,14 @@ jobs:
             runner: ubuntu-latest
             build-mode: none
           - language: swift
-            runner: macos-26
+            runner: macos-26-intel
             build-mode: manual
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # Resolve tools and packages before CodeQL starts its Rosetta build tracer.
+      # Native Intel avoids Rosetta stalls during Swift package graph resolution.
       - name: Prepare Swift build
         if: matrix.language == 'swift'
         env:
@@ -64,7 +64,7 @@ jobs:
         if: matrix.language == 'swift'
         run: |
           xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
-            -configuration Debug -destination 'platform=macOS,arch=arm64' \
+            -configuration Debug -destination 'platform=macOS,arch=x86_64' \
             -clonedSourcePackagesDirPath .spm -disableAutomaticPackageResolution -skipPackageUpdates \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=NO SWIFT_ENABLE_COMPILE_CACHE=NO \
