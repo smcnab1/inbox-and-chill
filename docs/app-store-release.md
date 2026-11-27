@@ -1,5 +1,9 @@
 # Mac App Store release — runbook (2026-09-09)
 
+> [!NOTE]
+> This is an inherited upstream runbook. The companion fork uses a local source build and manual updates. Its direct build has upstream Sparkle updates disabled. Follow the [fork installation guide](../README.md#build-and-install) and [companion update steps](../companion/README.md#update-an-existing-install).
+
+
 Status: **the app side is built** (this PR): a free download, a 14-day trial
 of everything, then one non-consumable in-app purchase to keep syncing. **The
 paperwork side is Brandon's and none of it has been done yet** — no App ID,

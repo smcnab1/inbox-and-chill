@@ -2,77 +2,11 @@
 
 ## 1. Build and install
 
-```sh
-brew install xcodegen   # once
-scripts/install-local.sh
-```
+For a local install, use the [direct build and installer](../README.md#build-and-install). The menu bar icon appears after launch. macOS asks for notification permission when you first use a feature that needs it.
 
-That builds a Release configuration, verifies the signature, installs to
-`/Applications`, and launches. Look for the tray icon in the menu bar (this
-is an `LSUIElement` app — no Dock icon until you open the ⌘0 window). First
-launch asks for notification permission.
+Use a stable installation path and the same local signing identity for updates. An ad-hoc signature can prompt again for Keychain or macOS permissions after each rebuild. An existing copy in `/Applications` with the same bundle identifier is replaced by the installer.
 
-Add `--debug` for a Debug build (which can run the fake connector, §2), or
-`--no-launch` to install without starting it.
-
-### Why install instead of running from DerivedData
-
-macOS ties **Keychain ACLs, TCC privacy permissions, and firewall
-decisions** to an app's *code signature* and *path*. Two things used to
-break both:
-
-- Builds were **ad-hoc signed** (`CODE_SIGN_IDENTITY: "-"`), which has no
-  stable identity. Every rebuild looked like a different app, so macOS
-  re-prompted for everything — most visibly the Keychain, which this app
-  touches on every token read.
-- DerivedData paths contain a random hash and change whenever DerivedData
-  is cleaned.
-
-Builds are now signed with **Developer ID Application** (team
-`CV926C8KS8`, set in `project.yml`) and installed to a stable location, so
-you grant each permission once and it sticks across rebuilds.
-
-**Credentials saved by an older ad-hoc build.** A Keychain item's access
-control list records which app may read it, and an item created by an
-ad-hoc build names an identity that no longer exists — so the properly
-signed app matches nothing and macOS puts up the "wants to use your
-confidential information" panel. Two ways to clear it:
-
-- **Keep the credential:** when the panel appears, type your login password
-  and click **Always Allow** (plain *Allow* is one-time and the panel comes
-  straight back). This rewrites the item's ACL in place. Prefer this for
-  anything you can't easily re-obtain — a Linear personal API key, for
-  instance, is only displayed once when you create it.
-- **Start clean:** delete the source in Settings and re-add it. Deleting
-  prefix-wipes its Keychain entries, and re-adding writes a fresh item
-  owned by the current build.
-
-Note that `Keychain.set` deletes before adding rather than using
-`SecItemUpdate`, so simply *editing* a source and re-pasting its token also
-rebuilds the ACL correctly.
-
-### Gatekeeper and notarization
-
-`spctl -a -vvv "/Applications/Inbox & Chill.app"` reports `rejected —
-source=Unnotarized Developer ID`. **This is expected and doesn't affect
-local use:** Gatekeeper only evaluates apps carrying a quarantine
-attribute, which is set on downloads, not on locally built apps. The app
-launches normally.
-
-Notarization is the remaining step before *distributing* the app to anyone
-else (PLAN §2.1.7). It needs an App Store Connect API key or an
-app-specific password, so it's a manual step:
-
-```sh
-xcrun notarytool submit "Inbox & Chill.zip" --keychain-profile "<your-profile>" --wait
-xcrun stapler staple "/Applications/Inbox & Chill.app"
-```
-
-### Building this yourself (not Brandon)
-
-Change `DEVELOPMENT_TEAM` in `project.yml` to your own Team ID
-(`security find-identity -v -p codesigning` lists yours), or build unsigned
-with `xcodebuild CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=NO`.
+For contributor checks, build and test using the ad-hoc signing flags in [CI](../.github/workflows/ci.yml). To try the fake connector below, use a separate macOS user or a disposable test environment so it starts with an empty store.
 
 ## 2. Ride the fake connector (no accounts needed)
 
@@ -94,11 +28,11 @@ Add the "Local coding agents" source in Settings › Sources (nothing is
 pre-added on a fresh install); it starts a localhost listener. The CLI lives inside the app bundle:
 
 ```sh
-alias inchill='~/Library/Developer/Xcode/DerivedData/InboxAndChill-*/Build/Products/Debug/"Inbox & Chill.app"/Contents/MacOS/inchill'
+alias inchill='/Applications/Inbox & Chill.app/Contents/MacOS/inchill'
 ```
 
 ```sh
-inchill notify --title "Hello from the terminal" --url "https://bgreen.lol"
+inchill notify --title "Hello from the terminal" --url "https://example.org/"
 ```
 
 The item appears in the panel instantly (banners default ON for this
@@ -129,7 +63,7 @@ Fastest first:
    mirror your Linear inbox; mark-done archives there; snoozes sync.
 2. **GitHub** (~3 min): classic PAT with `notifications` scope
    (github.com/settings/tokens — fine-grained tokens don't work), authorize
-   SSO for the Buffer org if prompted.
+   SSO for your organisation if prompted.
 3. **Slack**: create the app from `docs/slack-app-manifest.yml` (see
    `docs/setup-sources.md`), install to the workspace (may need admin
    approval), paste the xoxp + xapp tokens. Then: have someone @-mention
@@ -142,18 +76,8 @@ Fastest first:
 xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill test
 ```
 
-33 tests, 5 suites, all deterministic (no network).
+The tests use an in-memory app store and temporary fixtures. Use the signing flags in [CI](../.github/workflows/ci.yml) when building without a Developer ID certificate.
 
-## 6. Reset to factory
+## 6. Preview first-run testing
 
-```sh
-pkill -f "Inbox & Chill"
-rm -rf ~/Library/Application\ Support/InboxAndChill
-defaults delete lol.bgreen.inboxandchill 2>/dev/null
-```
-
-Keychain items live under service `lol.bgreen.inboxandchill` in Keychain
-Access if you want to purge tokens too. The **store build's** trial clock and
-purchase memo are two of them (`license.trialStartedAt`,
-`license.appStoreUnlocked`); `docs/app-store-release.md` has the two
-`security delete-generic-password` lines that reset just those.
+Use a disposable test installation. Run `scripts/reset-first-run.sh --dry-run` to inspect the cleanup the script would perform. The script targets the current user’s local app state, so use a separate macOS user when you need a clean first launch alongside a daily installation.

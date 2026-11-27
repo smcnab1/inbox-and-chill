@@ -11,6 +11,10 @@ have to start it.
 
 ## What runs, and why each one is here
 
+**Web companion** on Linux runs the npm tests and Playwright triage flows in Chromium and WebKit. It uploads screenshots of the sample inbox.
+
+**CodeQL** scans the workflows, JavaScript companion and Swift app. Swift analysis generates the project with XcodeGen and compiles it on macOS so CodeQL can trace the build.
+
 ### 1. Shell scripts (Linux, under a minute)
 
 `scripts/check-shell.sh` — three things:
@@ -77,8 +81,7 @@ that **produce no build failure at all**:
 
 | Checked | Why |
 |---|---|
-| `SUFeedURL` is in the Info.plist | `INFOPLIST_KEY_SUFeedURL` once built, signed and shipped a bundle with no feed URL in it, silently. Sparkle would have had nothing to read. |
-| `SUPublicEDKey` is present | Without it the app can't verify an update it downloads. |
+| `SUFeedURL` and `SUPublicEDKey` are absent | The direct fork build uses manual updates and must not trust the upstream Sparkle channel. |
 | Version numbers match `project.yml` | XcodeGen's defaults pin a generated plist to "1.0" / "1". That breaks the About pane, the release zip's filename, and Sparkle's "is this newer?" comparison — so no install would ever be offered an update. |
 | `LSUIElement`, `LSMinimumSystemVersion`, `NSAppleEventsUsageDescription` | Each absence is invisible until a user hits it. |
 | The `apple-events` entitlement is present | Without it macOS refuses every Apple event with no consent prompt at all, and Apple Mail plus the Claude Code tab-focus both look like "nothing happened". This is exactly how 0.3.0 shipped. |
@@ -178,19 +181,9 @@ Three things in the setup came from that, and two are worth keeping anyway:
   entitlements file, or `scripts/`. A Swift-only change cannot move
   `SUFeedURL`. Left conditional deliberately, not by inertia.
 
-## Making CI actually enforce anything
+## Required checks on the fork
 
-By default a red check is a red mark on the pull request and nothing more —
-GitHub will still let it merge. To make it binding:
-
-**Settings → Branches → Add branch ruleset**, targeting `main`:
-
-- Require a pull request before merging
-- Require status checks to pass, and select **Build and test**, **Shell
-  scripts**, and **gitleaks**
-
-Those names appear in the list once each workflow has run at least once, so
-merge this first, then go set them.
+The fork’s main-branch ruleset requires a pull request and these GitHub Actions checks: **Build and test**, **Shell scripts**, **Web companion** and **gitleaks**. Keep job names and the ruleset in sync when renaming checks. External review services are optional.
 
 ## When something breaks that isn't your fault
 

@@ -1,5 +1,9 @@
 # Inbox & Chill — Plan
 
+> [!NOTE]
+> These are Brandon Lucas Green’s upstream design and development notes. For current fork installation, companion behaviour and repository procedures, see the [README](README.md) and [contributing guide](CONTRIBUTING.md).
+
+
 *A native macOS menu bar app that aggregates your unread/actionable queue across Slack, Linear, GitHub, ntfy, terminal apps (incl. Claude Code), and custom sources.*
 
 > Status: v3 — BUILT (2026-08-17). All milestones implemented; 33 tests green. Remaining human steps: Slack app install approval, Campsite Doorkeeper token, per-source API keys, Developer ID signing for release. See README.md and docs/.
