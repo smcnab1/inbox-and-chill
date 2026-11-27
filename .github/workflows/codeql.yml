@@ -40,13 +40,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-
-      # Default setup cannot find the project because it is generated.
-      - name: Generate and build the Mac app
+      # Install native tools before CodeQL starts its Rosetta build tracer.
+      - name: Prepare Swift build
         if: matrix.language == 'swift'
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -54,10 +49,22 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
+          # Swift build tracing requires Xcode 26 on macOS 26.
+          echo 'DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer' >> "$GITHUB_ENV"
+
+      - uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Build the Mac app for analysis
+        if: matrix.language == 'swift'
+        run: |
           xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
-            -configuration Debug -destination "platform=macOS,arch=$(uname -m)" \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO \
-            DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS=--timestamp=none build
+            -configuration Debug -destination 'platform=macOS,arch=arm64' \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            COMPILATION_CACHE_ENABLE_CACHING=NO SWIFT_ENABLE_COMPILE_CACHE=NO \
+            SWIFT_USE_INTEGRATED_DRIVER=NO build
 
       - uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
