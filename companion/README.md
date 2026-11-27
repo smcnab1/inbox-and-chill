@@ -1,6 +1,6 @@
 # Inbox & Chill on iPhone
 
-Install a private Home Screen app from Safari. The sample inbox runs on a Mac with Node 22.13 or newer. Live mode also needs this branch's **direct** macOS build running with the Local source enabled. The Mac hosts the relay and must be awake for sync and push. There is no Apple membership, domain registration or hosted database to buy. Tailscale Personal is free for personal use. [Tailscale pricing](https://tailscale.com/pricing) · [WebKit Home Screen support](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)
+Install a private Home Screen app from Safari. The sample inbox runs on a Mac with Node 22.13 or newer. Live mode uses the **direct** macOS build. The Mac hosts the relay and must be awake, with your macOS session logged in, for sync and push. There is no Apple membership, domain registration or hosted database to buy. Tailscale Personal is free for personal use. [Tailscale pricing](https://tailscale.com/pricing) · [WebKit Home Screen support](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)
 
 ## Install and test with sample data
 
@@ -27,34 +27,57 @@ To test on the Mac alone, run `npm run demo` without `ORIGIN` and open `http://1
 
 ## Connect the live Mac inbox
 
-Build the direct candidate from the repository root with Xcode and XcodeGen installed. This creates a review app under `build/`. Quit any already-running Inbox & Chill before opening the candidate, since both use the same SwiftData store. Ad-hoc review builds can prompt for access to existing Keychain entries. The normal app in Applications is preserved.
+1. Build and install the companion fork, not the upstream DMG, Homebrew cask or App Store app. With your usual local signing identity, build the direct target, then pass the built bundle to `scripts/install-local.sh --app "/path/to/Inbox & Chill.app"`. If you do not have a signing identity, this local build is free:
 
-```sh
-xcodegen generate
-xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
-  -configuration Debug -destination 'platform=macOS' -derivedDataPath build/companion-mac \
-  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
-  ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS=--timestamp=none build
-open "build/companion-mac/Build/Products/Debug/Inbox & Chill.app" --args --web-companion
-```
+   ```sh
+   xcodegen generate
+   xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
+     -configuration Release -destination 'platform=macOS' -derivedDataPath build/companion-mac \
+     CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= OTHER_CODE_SIGN_FLAGS=--timestamp=none build
+   scripts/install-local.sh --app 'build/companion-mac/Build/Products/Release/Inbox & Chill.app'
+   ```
 
-In Mac **Settings → Sources**, enable **Local** and the desired GitHub, Linear or ntfy sources. Existing Claude Code and Codex hooks feed their usual Local rows. Local file links and terminal sessions open on the Mac only. Credentials are entered on the Mac. [Source setup](../docs/setup-sources.md) · [Local hooks](../docs/shell-integration.md)
+   The installer checks the bundle and installs it in `/Applications`. It does not move or reset app data, provider Keychain entries or pairing. A different signing identity can trigger a one-time Keychain approval; ad-hoc builds can ask again after each rebuild. For repeat installs, use the same local signing identity where available. The fork cannot check for or install upstream updates. Rebuild and reinstall from this repository after reviewing changes; do not put the fork under the upstream Homebrew cask.
 
-Stop the demo relay with Control-C. In the same terminal, start live mode with `ORIGIN="https://${name}:8443" npm start`. Pair in the Home Screen app using a fresh code from `npm --prefix companion run pair` at the repository root. Live and sample sessions, keys and state are separate.
+2. In Mac **Settings → General**, turn on **Enable iPhone companion** and **Launch at login**. In **Settings → Sources**, enable **Local coding agents** and the GitHub, Linear or ntfy sources you want on the phone. Existing local hooks keep working when the companion is off. Local files and terminal sessions open on the Mac only. Enter provider credentials only on the Mac. [Source setup](../docs/setup-sources.md) · [Local hooks](../docs/shell-integration.md)
 
-For a disposable cross-device check, run the following from the repository root, refresh the phone, pin the row and verify the pin on the Mac. Archive it on the phone and restore it from Archive on the Mac. **Done** uses the existing connector's remote action, including GitHub mark-read or Linear archive. **Archive** only dismisses the shared queue row. **Restore / Undo** brings back the local row. Linear also writes snoozes through to the source.
+3. If the private Tailscale Serve proxy is already working, keep its **exact HTTPS address and port**. Otherwise, create the persistent Serve mapping in the sample instructions above. Stop any terminal relay listening on port 8787; then, from the repository root, install the live LaunchAgent:
 
-```sh
-"build/companion-mac/Build/Products/Debug/Inbox & Chill.app/Contents/MacOS/inchill" \
-  notify --id companion-review --title "Companion review" --body "Disposable test row"
-```
+   ```sh
+   scripts/install-companion-relay.sh 'https://your-mac.your-tailnet.ts.net:8443'
+   ```
+
+   This copies the relay into Application Support. macOS starts it at login and relaunches it if it exits, without a terminal or checkout running. Keep Tailscale set to launch at login and use Serve, not Funnel. Rerun the same installer to update the relay. For a Node version manager, select a Node 22.13+ executable available outside the project at login.
+
+4. An existing live pairing at this address keeps working. To pair a new Home Screen app or renew an expired session:
+
+   ```sh
+   relay="$HOME/Library/Application Support/InboxAndChillCompanion/relay"
+   node "$relay/server.mjs" --pair
+   ```
+
+   The pairing code is single-use and expires in ten minutes. Demo state and pairing are separate from live.
+
+## Check and operate the live setup
+
+- **Restart:** Quit and reopen the Mac app from Applications. Refresh the existing Home Screen app. It should reconnect without a new code. The relay runs independently; `launchctl print "gui/$(id -u)/lol.bgreen.inboxandchill.companion"` shows its state. Details for startup failures are in `~/Library/Application Support/InboxAndChillCompanion/relay-error.log`.
+- **Notification and badge:** Leave the Home Screen app in the background and send a disposable arrival from the Mac:
+
+  ```sh
+  cli='/Applications/Inbox & Chill.app/Contents/MacOS/inchill'
+  "$cli" notify --id companion-review --title "Companion review" --body "Disposable test row"
+  ```
+
+  Look for a generic Inbox & Chill notification and compare its badge with the unread count after opening the app. Archiving on the phone should remove the row from the Mac inbox; restoring it from the Mac Archive should bring it back on the phone. Remove the test row with `"$cli" clear companion-review`. For push setup use the Home Screen app's **Settings → Enable push**, followed by **Send test push**.
+- **Triage:** **Archive** only dismisses the shared queue row. **Restore / Undo** brings it back. **Done** uses the existing source action, such as GitHub mark-read or Linear archive. Linear also writes snoozes through to the source.
+- **Turn off:** Switch off **Enable iPhone companion** to block live reads and actions without changing the Local source or pairing. To stop hosting entirely, boot out the relay with `launchctl bootout "gui/$(id -u)/lol.bgreen.inboxandchill.companion"`, move its plist out of `~/Library/LaunchAgents/`, and turn off the matching Tailscale Serve mapping with `tailscale serve --https=8443 off`. Leave the device database in place if you intend to use the same pairing again.
 
 ## Privacy and operation
 
-- The relay binds to IPv4 loopback. A paired device receives a 30-day HttpOnly, SameSite session cookie, marked Secure over HTTPS. Every mutation checks the configured origin. On the Mac, the discovery file is owner-readable and the companion bearer is separate from the existing producer bearer. Live reads and writes require the opt-in launch flag.
-- Live notification state stays in the Mac app. The phone holds rows in memory and caches only the public app shell. Fresh data and triage require a connection. The relay stores device-session hashes, push subscriptions and the VAPID signing key under `~/Library/Application Support/InboxAndChillCompanion/{demo,live}/` with owner-only permissions. Provider secrets stay in macOS Keychain.
-- The open inbox refreshes every 30 seconds and when it regains focus. With push subscribers, the relay checks for arrivals and snooze wakes every 15 seconds. It starts from the current snapshot on startup. Encrypted pushes carry a count and display generic lock-screen text. The badge updates on refresh or an activity push. Changes on another device during a quiet period reach the badge when the app next refreshes.
-- **Settings → Unpair device** revokes this session and its push registration. For a lost device, run `node server.mjs --revoke` in `companion/` to revoke all live sessions. Add `--demo` for sample sessions. To stop hosting, interrupt the Node process and run `"$ts" serve --https=8443 off` in the first terminal. Quit the review app and reopen your usual Mac app to return to normal use.
+- The relay binds to IPv4 loopback. A paired device receives a 30-day HttpOnly, SameSite session cookie, marked Secure over HTTPS. Every mutation checks the configured origin. The native discovery file is owner-readable, and the companion bearer is separate from the producer bearer. The native bridge is off by default.
+- The phone holds live rows in memory and caches only the public app shell. The relay stores device-session hashes, push subscriptions, the VAPID signing key, and hashed item IDs and timestamps used to detect arrivals after a restart. It does not store live titles, links or message content. Live relay state stays under `~/Library/Application Support/InboxAndChillCompanion/live/` with owner-only permissions. Provider secrets stay in macOS Keychain.
+- The open inbox refreshes every 30 seconds and on return to the foreground. The relay checks for new activity about every 15 seconds. Encrypted pushes carry a count and show generic lock-screen text. The badge updates on arrival or when you reopen or refresh the inbox. A Mac-side read or archive alone does not send a new notification just to update a background badge.
+- **Settings → Unpair device** revokes this session and its push registration. For a lost device, use `node "$relay/server.mjs" --revoke` to revoke all live sessions and pairing codes.
 
 ## Development
 
