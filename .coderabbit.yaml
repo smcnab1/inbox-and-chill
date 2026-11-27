@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-GB
+tone_instructions: "Prioritise correctness, regressions, privacy and concrete failure scenarios. Avoid cosmetic preferences and speculative refactors. Keep findings concise."
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_instructions: "Summarise the practical impact in up to three short bullets."
+  estimate_code_review_effort: false
+  assess_linked_issues: false
+  related_issues: false
+  collapse_walkthrough: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+  path_instructions:
+    - path: "Sources/**/*.swift"
+      instructions: "Check Swift concurrency, source write-through, local data compatibility and macOS 15 support. Preserve Keychain boundaries, loopback authentication and the opt-in companion bridge."
+    - path: "companion/**"
+      instructions: "Check pairing, session and origin validation, least-privilege relay access, private push payloads and accessible mobile triage. Use synthetic fixtures and preserve existing pairing on updates."
+    - path: "{.github/workflows/**,scripts/**,project.yml}"
+      instructions: "Preserve macOS build and verification, local signing compatibility and relay state. Flag accidental publishing or an upstream updater enabled in the fork."

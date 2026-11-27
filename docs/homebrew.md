@@ -1,5 +1,9 @@
 # Homebrew
 
+> [!NOTE]
+> This is an inherited upstream runbook. The companion fork uses a local source build and manual updates. Its direct build has upstream Sparkle updates disabled. Follow the [fork installation guide](../README.md#build-and-install) and [companion update steps](../companion/README.md#update-an-existing-install).
+
+
 Installing and updating the app with `brew`, and how the cask that makes that
 work is maintained.
 

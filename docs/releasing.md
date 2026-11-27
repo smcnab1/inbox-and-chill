@@ -1,5 +1,9 @@
 # Releasing
 
+> [!NOTE]
+> This is an inherited upstream runbook. The companion fork uses a local source build and manual updates. Its direct build has upstream Sparkle updates disabled. Follow the [fork installation guide](../README.md#build-and-install) and [companion update steps](../companion/README.md#update-an-existing-install).
+
+
 How to cut a release, and what to check afterwards. Written to be walked
 through step by step — with Claude Code or alone — because the failures here
 are the kind that look fine locally and only show up on someone else's Mac.

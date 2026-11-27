@@ -16,7 +16,7 @@ Install a private Home Screen app from Safari. The sample inbox runs on a Mac wi
    ORIGIN="https://${name}:8443" npm run demo
    ```
 
-   Use an unused Serve port if 8443 already hosts another service. Keep Serve limited to your tailnet. Its public counterpart, Funnel, would expose the login surface to the internet. The host name used for a TLS certificate can appear in public certificate transparency logs. [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve) · [HTTPS certificates](https://tailscale.com/kb/1153/enabling-https)
+   Use an unused Serve port if 8443 already hosts another service. Keep Serve limited to your tailnet. Its public counterpart, Funnel, would expose the login surface to the internet. The host name used for a TLS certificate can appear in public certificate transparency logs. [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve) · [HTTPS certificates](https://tailscale.com/docs/how-to/set-up-https-certificates)
 
 2. On iPhone **iOS 16.4 or later**, open the HTTPS address printed by the server in Safari. Tap **Share → Add to Home Screen → Add**. Some Safari versions put Share in the page menu and Add to Home Screen under **View More**. Leave **Open as Web App** enabled when offered.
 3. Open **Inbox & Chill** from the new icon. In a second Mac terminal, from the repository root, run `npm --prefix companion run pair -- --demo`. Enter the displayed code in the Home Screen app. It works once for ten minutes.
@@ -27,18 +27,7 @@ To test on the Mac alone, run `npm run demo` without `ORIGIN` and open `http://1
 
 ## Connect the live Mac inbox
 
-1. Build and install the companion fork, not the upstream DMG, Homebrew cask or App Store app. With your usual local signing identity, build the direct target, then pass the built bundle to `scripts/install-local.sh --app "/path/to/Inbox & Chill.app"`. If you do not have a signing identity, this local build is free:
-
-   ```sh
-   xcodegen generate
-   xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
-     -configuration Release -destination 'platform=macOS' -derivedDataPath build/companion-mac \
-     CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= OTHER_CODE_SIGN_FLAGS=--timestamp=none build
-   scripts/install-local.sh --app 'build/companion-mac/Build/Products/Release/Inbox & Chill.app'
-   ```
-
-   The installer checks the bundle and installs it in `/Applications`. It does not move or reset app data, provider Keychain entries or pairing. A different signing identity can trigger a one-time Keychain approval; ad-hoc builds can ask again after each rebuild. For repeat installs, use the same local signing identity where available. The fork cannot check for or install upstream updates. Rebuild and reinstall from this repository after reviewing changes; do not put the fork under the upstream Homebrew cask.
-
+1. [Build and install the direct Mac app from this fork](../README.md#build-and-install). If you already use a local signing identity, keep it for repeat installs.
 2. In Mac **Settings → General**, turn on **Enable iPhone companion** and **Launch at login**. In **Settings → Sources**, enable **Local coding agents** and the GitHub, Linear or ntfy sources you want on the phone. Existing local hooks keep working when the companion is off. Local files and terminal sessions open on the Mac only. Enter provider credentials only on the Mac. [Source setup](../docs/setup-sources.md) · [Local hooks](../docs/shell-integration.md)
 
 3. If the private Tailscale Serve proxy is already working, keep its **exact HTTPS address and port**. Otherwise, create the persistent Serve mapping in the sample instructions above. Stop any terminal relay listening on port 8787; then, from the repository root, install the live LaunchAgent:
@@ -57,6 +46,14 @@ To test on the Mac alone, run `npm run demo` without `ORIGIN` and open `http://1
    ```
 
    The pairing code is single-use and expires in ten minutes. Demo state and pairing are separate from live.
+
+## Update an existing install
+
+1. [Update your checkout and reinstall the direct Mac app](../README.md#update-the-mac-app) with your usual signing identity.
+2. From the updated checkout, rerun `scripts/install-companion-relay.sh` with the exact existing HTTPS origin, including its port. The installer replaces the relay and restarts its LaunchAgent. It keeps the live database and VAPID keys in place.
+3. Reopen the existing Home Screen app while connected to your tailnet. Refresh the inbox and, if you use push, send a test notification from **Settings**.
+
+Keep the same origin so the existing session cookie and push subscription still apply. Pair again if the session expired or you intentionally changed the origin.
 
 ## Check and operate the live setup
 

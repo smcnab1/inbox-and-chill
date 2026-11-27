@@ -1,5 +1,9 @@
 # Inbox & Chill — working notes for agents
 
+> [!NOTE]
+> These are Brandon Lucas Green’s upstream design and development notes. For current fork installation, companion behaviour and repository procedures, see the [README](README.md) and [contributing guide](CONTRIBUTING.md).
+
+
 Native macOS menu bar app (macOS 15+, SwiftUI + SwiftData) that aggregates one
 triage queue from Slack, Linear, GitHub, ntfy, and local producers
 (the `inchill` CLI, Claude Code hooks).

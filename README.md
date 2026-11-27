@@ -1,162 +1,100 @@
-# Inbox & Chill
+<p align="center"><img src="Sources/App/Resources/Assets.xcassets/AppIcon.appiconset/icon_128.png" width="80" height="80" alt="Inbox & Chill app icon"></p>
+<h1 align="center">Inbox &amp; Chill</h1>
+<p align="center"><strong>One queue for the things that need your attention.</strong></p>
+<p align="center">A free, open-source macOS menu bar app with an optional private iPhone companion.</p>
 
-**MIT licensed** — free to use, build, fork, and ship. See [LICENSE](LICENSE).
+<p align="center">
+  <a href="#build-and-install">Install from source</a> ·
+  <a href="companion/README.md">iPhone setup</a> ·
+  <a href="docs/setup-sources.md">Connect sources</a> ·
+  <a href="https://github.com/smcnab1/inbox-and-chill/issues/new/choose">Report an issue</a>
+</p>
 
-A native macOS menu bar app that pulls the things that actually need you out of Linear, GitHub, GitLab, Slack, Trello, Sentry, Apple Mail, Apple Reminders, Todoist, Asana, ntfy, any JSON feed, and your local coding agents (Claude Code, Codex, Gemini) into one queue — and then helps you empty it.
+<p align="center">
+  <a href="https://github.com/smcnab1/inbox-and-chill/actions/workflows/ci.yml"><img alt="CI on main" src="https://github.com/smcnab1/inbox-and-chill/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-blue"></a>
+  <a href="#requirements"><img alt="macOS 15 or later" src="https://img.shields.io/badge/macOS-15%2B-30363d"></a>
+</p>
 
-Inbox & Chill is a **triage queue, not a status mirror**. It doesn't try to be a client for any of these services — no composing Slack messages, no editing Linear issues. Items flow in, you act on them (open, done, snooze, pin, archive), and the queue goes to zero. The moment an item needs real work, it deep-links you into the app that owns it. The menu bar is the primary surface: click the icon (or hit a global hotkey) and a panel drops down with everything waiting for you, grouped by source.
+This is Sam McNab’s fork of [Inbox & Chill by Brandon Lucas Green](https://github.com/brandonlucasgreen/inbox-and-chill). It adds an opt-in companion that lets you triage part of your Mac inbox from your iPhone. Install and update this fork from source. Upstream downloads and the upstream Homebrew cask use a separate distribution channel.
 
-## Features
+<p align="center">
+  <img src="docs/images/mac-inbox.png" width="306" alt="Mac menu bar panel with sample notifications grouped by source">
+  <img src="docs/images/companion-iphone.png" width="200" alt="iPhone companion showing its sample inbox, filters and pinned notification">
+</p>
+<p align="center">Sample inboxes on macOS and iPhone.</p>
 
-**Sources**
+## What you can do
 
-Every source is added in Settings › Sources; nothing is pre-configured. Two need no account or token at all.
+- Triage notifications and tasks from the menu bar or open the same queue in a separate window with `⌘0`.
+- Open an item in its source, mark it done, snooze it, pin it or restore it from the archive. Actions such as marking a GitHub notification read or snoozing a Linear notification can update the source.
+- Fold rows by source context, such as a GitHub repository or Slack channel, and use Topics to group related items across sources.
+- Use keyboard shortcuts, Apple Shortcuts or the [`inchill` CLI](docs/shell-integration.md) to act on the queue or add local notifications.
 
-- Linear — full inbox mirror (mentions, assignments, comments), with real remote snooze
-- GitHub — notifications inbox (review requests, mentions, assignments), folded by repository
-- GitLab — your To-Do list (assigned, mentioned, approvals, broken pipelines), marked done in GitLab when you clear it
-- Slack — mentions, DMs and keyword watches via Socket Mode, plus an emoji-reaction "save for later"
-- Trello — your notification feed (mentions, cards you're added to, due dates), marked read in Trello when you clear it
-- Sentry — the For Review tab, with resolving opt-in because it's team-visible
-- Apple Mail — flagged or unread messages from every account Mail has, Gmail included; no token, one permission prompt
-- Apple Reminders — what's due today or overdue, plus any lists you pick; no token
-- Todoist and Asana — your tasks, with `C` completing them in the app that owns them and `E` only dismissing here
-- ntfy — push notifications over a topic's WebSocket
-- Custom JSON feeds — any URL that returns a JSON array, or an object holding one (`root=data`), with a one-line field mapping
-- Local coding agents — the `inchill` CLI and hooks for Claude Code, Codex and Gemini, so a session that's waiting on you is one row in the queue
+## Supported sources
 
-**Grouping**
+Add sources in **Settings → Sources** on the Mac. Apple Mail and Reminders use macOS permissions. Local coding agents use local hooks or the CLI.
 
-Rows from one source fold by what they share — a Slack channel, a GitHub repository, a Linear issue, a mail sender — and a Topic collects rows from several sources under one name you choose. Both count as one on the badge.
+| On the Mac | What enters the queue |
+| --- | --- |
+| GitHub, GitLab, Linear, Trello | GitHub notifications, GitLab to-dos, Linear inbox items and Trello notifications |
+| Slack, Sentry | Slack mentions, DMs and watched keywords, and Sentry items for review |
+| Apple Mail, Apple Reminders, Todoist, Asana | Flagged or unread mail, reminders and assigned tasks |
+| ntfy, custom JSON | Notifications from an ntfy topic and items from a mapped JSON feed |
+| Local coding agents | Claude Code, Codex and Gemini hooks, plus custom `inchill` producers |
 
-**Two surfaces**
-The menu bar panel is the default: click the icon (or hit a global hotkey) and it drops down over everything waiting for you, grouped by source. `⌘0` (or the window icon in the footer) opens the same queue as a regular window instead, with every triage action mirrored as a real menu item under **Queue** — useful for keeping it around on a second display.
-
-**The selected row opens**
-Every row is one line until you move onto it, and then it opens to a paragraph — two lines of title, four of message — and closes again as you arrow past. One line is enough to tell items apart and rarely enough to act on one, so the row you are actually looking at is the one that shows its text.
-
-**Automation**
-Siri Shortcuts / App Intents expose the queue outside the app: get items, get a count, snooze, or mark done from Shortcuts.app, Spotlight, or a voice command.
-
-**Updates**
-The app checks for new versions once a day and asks before installing anything, via [Sparkle](https://sparkle-project.org). You can turn the check off, or trigger one, in Settings → General → Updates. Builds you make yourself have no update-signing key, so they say so in that pane rather than failing quietly later.
-
-**Triage verbs**
-- Open — deep-links into the owning app or URL
-- Done (`E`) — clears the item, with write-through where the service supports mark-read
-- Undo (`⌘Z`) — brings back the last thing you marked done
-- Snooze (`S`) — hides an item until later; real remote snooze on Linear, local elsewhere
-- Pin (`⌘P`) — exempts an item from every auto-clear, done, and purge, until you unpin it
-- Archive — done items live in a searchable 90-day archive, then purge automatically
-
-**Badge modes**
-The menu bar icon can show a total count, a high-signal-only count (the default), a plain dot, or nothing at all. Each source has its own "counts toward badge" toggle. Zero unread means a clean icon.
-
-**Keyboard-first**
-
-| Key | Action |
-|---|---|
-| `↑` / `↓` | Move selection |
-| `⏎` | Open selected item |
-| `⌘⏎` | Open selected item and mark done |
-| `E` | Done |
-| `S` | Snooze |
-| `U` | Toggle read / unread |
-| `D` | Show the selected item's whole message, or close it again |
-| `⌘P` | Pin / unpin |
-| `⌘Z` | Undo last done |
-| `⌘C` | Copy (title + URL) |
-| `←` / `→` | Cycle the source filter chips |
-| `⌘1`…`⌘9` | Jump to a source filter chip |
-| type | Type-to-filter the visible list |
-| `⌘F` | Start typing a filter |
-| `Esc` | Clear filter, close snooze picker, or close the panel |
-| `⌘R` | Refresh all sources |
-| `⇧⌘A` | Toggle the archive |
-| `⌘0` | Open the queue in a window |
-| `⌘,` | Settings |
-| `⌘Q` | Quit |
+The iPhone companion shows **GitHub, Linear, ntfy and Local coding agents**. Mac-only files and terminal sessions open on the Mac. The inherited GitLab, Trello and Asana connectors have limited live-account verification. [Source setup and per-source details](docs/setup-sources.md)
 
 ## Requirements
 
-- macOS 15 (Sequoia) or later
+| Use | Requirements |
+| --- | --- |
+| Mac app | macOS 15 Sequoia or later |
+| Build from source | Full [Xcode 26 or later](https://developer.apple.com/xcode/system-requirements/) with its command-line tools selected, and [XcodeGen](https://github.com/yonaskolb/XcodeGen) |
+| iPhone companion | iOS 16.4 or later, Safari, Node.js 22.13 or later on the Mac, and both devices on the same private [Tailscale](https://tailscale.com/) network |
 
-## Install
+## Build and install
 
-This fork's companion-enabled Mac app is built and updated from this repository. Follow the [Mac install and private relay guide](companion/README.md#connect-the-live-mac-inbox). The upstream DMG, App Store build and Homebrew cask do not include the iPhone companion; don't use them to update this build.
+With Xcode and [Homebrew](https://brew.sh/) available, clone the fork and build the direct target. The installer validates the build, places it in `/Applications` and launches it. Xcode 26 requires macOS 15.6 or later on the build Mac.
+
+For an update from an existing checkout with XcodeGen installed, start at `xcodegen generate`.
+
+The example defaults to ad-hoc signing and requires no Apple Developer membership. Before running it over an installation signed with your own certificate, export `INCHILL_SIGNING_IDENTITY` with the exact identity you used and `INCHILL_DEVELOPMENT_TEAM` with its Team ID. The installer keeps the signature of the bundle you pass in.
+
+```sh
+git clone https://github.com/smcnab1/inbox-and-chill.git
+cd inbox-and-chill
+brew install xcodegen
+xcodegen generate
+xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
+  -configuration Release -destination 'platform=macOS' -derivedDataPath build/companion-mac \
+  CODE_SIGN_IDENTITY="${INCHILL_SIGNING_IDENTITY:--}" \
+  DEVELOPMENT_TEAM="${INCHILL_DEVELOPMENT_TEAM:-}" OTHER_CODE_SIGN_FLAGS=--timestamp=none build
+scripts/install-local.sh --app 'build/companion-mac/Build/Products/Release/Inbox & Chill.app'
+```
+
+With ad-hoc signing, macOS may ask for Keychain access again after a rebuild. The fork uses the original bundle identifier and the same application data paths. [Local build and testing notes](docs/testing-locally.md)
 
 ## iPhone companion
 
-Install the optional PWA from Safari to triage the same GitHub, Linear, ntfy and local-agent queue on your iPhone. The free direct Mac build owns the live data and credentials. A separate sample inbox works before you connect any accounts. [Installation and private pairing](companion/README.md)
+Enable the companion on the Mac and install the site from Safari as a Home Screen app. The Mac hosts the relay and serves it over HTTPS through **Tailscale Serve**. Pair the phone with a one-time code. You can try a separate sample inbox before connecting live data.
 
-## Building
+Archive and restore the shared queue, or use **Mark done** to apply the source’s action where available. Optional Web Push uses generic lock-screen text and can update the Home Screen badge. The Mac needs to be awake and logged in, with the app and relay running for live sync and new push alerts. The phone refreshes on foreground and every 30 seconds while the inbox is open. A Mac-side archive or read may leave a background badge stale until the next refresh or push.
 
-Inbox & Chill uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate its Xcode project from `project.yml`, so the `.xcodeproj` itself isn't committed.
+[Private setup, push and recovery](companion/README.md) · [Privacy](PRIVACY.md)
 
-```sh
-brew install xcodegen
-xcodegen generate
-open InboxAndChill.xcodeproj
-```
+## Update
 
-Or build from the command line:
+### Update the Mac app
 
-```sh
-xcodebuild -scheme InboxAndChill -configuration Debug build
-```
+From a clean checkout on `main`, run `git fetch origin` and review the incoming commits with `git log --oneline HEAD..origin/main`. Then run `git merge --ff-only origin/main` to bring those commits into your checkout. [Rebuild and install](#build-and-install) with your existing signing identity or the ad-hoc settings you already use. The fork uses manual updates.
 
-To actually *use* the app day to day, install it rather than running it out of DerivedData:
+### Update the iPhone companion
 
-```sh
-scripts/install-local.sh
-```
+From that updated checkout, rerun `scripts/install-companion-relay.sh` with your **existing HTTPS origin and port**, then reopen the Home Screen app. Keeping the same origin and relay data preserves the pairing. [Companion update steps](companion/README.md#update-an-existing-install)
 
-This builds signed, installs to `/Applications`, and launches. A stable path plus a real (non-ad-hoc) signature is what lets macOS remember Keychain, notification, and firewall permissions between builds instead of re-prompting every time — see [docs/testing-locally.md](docs/testing-locally.md).
+## Contribute
 
-**Signing:** builds use a Developer ID Application identity, configured via `DEVELOPMENT_TEAM` in `project.yml`. Building from your own clone means changing that to your Team ID, or passing `CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=NO` for an unsigned build.
+[Contributing and syncing upstream](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-**If you build unsigned, macOS will ask permission for every credential, on every rebuild.** This is not a bug in the app and there is nothing it can do about it. Secrets live in the login keychain, and a keychain item's access control records the *code identity* of whichever build created it. A signed build gets an identity-based requirement — bundle ID plus team — which every later build satisfies, so permission is granted once and never asked again. An ad-hoc build has no certificate to form that requirement from, so macOS pins the item to the binary's hash instead, and the next build is a different binary. Check what a given app records with:
-
-```bash
-codesign -d -r- "/Applications/Inbox & Chill.app"
-```
-
-Three ways out, in order of how much you'll like them: sign with your own Developer ID (`DEVELOPMENT_TEAM=<your team>`) and the problem never appears; click **Always Allow** rather than *Allow*, which grants the current binary standing access until you rebuild; or accept a prompt per credential per rebuild. Items created by an unsigned build stay poisoned after you switch to signing — re-enter the credential in Settings, which rewrites the item under the new identity (writes are delete-then-add for exactly this reason).
-
-The build also compiles and embeds the `inchill` CLI inside the app bundle (`Contents/MacOS/inchill`), signed with the same identity — see [docs/shell-integration.md](docs/shell-integration.md).
-
-**Companion updates are manual.** Build and reinstall from this repository. The direct companion build retains the original bundle identifier for local data compatibility, but does not start the upstream Sparkle updater.
-
-## Contributing
-
-Work lands via pull request. Every one gets built and tested from scratch on a
-clean Mac by GitHub Actions, alongside a shell-script lint and a full-history
-secret scan — see [docs/ci.md](docs/ci.md) for what each check is for, what it
-deliberately doesn't do, and what it costs.
-
-CI holds no signing credentials. The local companion build is installed manually, not published through the upstream release script.
-
-## Status
-
-Built for one person's daily use first, and used that way every day. Three sources — GitLab, Trello and Asana — were written against their published APIs without a live account to test them on, and say so in their setup docs; if one misbehaves, [help@bgreen.lol](mailto:help@bgreen.lol) or an issue here is the fix.
-
-The code is MIT licensed.
-
-## License
-
-[MIT](LICENSE). Do what you like with it.
-
-Two dependencies and the icon are also MIT, and ship inside the app:
-[KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts),
-[Sparkle](https://sparkle-project.org), and Microsoft's
-[Fluent Emoji](https://github.com/microsoft/fluentui-emoji) victory hand — see
-[docs/brand/vendor/](docs/brand/vendor/) for the licence texts and how each
-shipped file is derived. The welcome window's typefaces,
-[Syne](https://fonts.google.com/specimen/Syne) and
-[Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), are SIL Open
-Font License 1.1 and ship in `Sources/App/Resources/Fonts/` with their licence
-texts beside them.
-
-## Design
-
-The product decisions, architecture, and per-service feasibility research behind this app are all written up in [PLAN.md](PLAN.md) — including why each connector works the way it does, what got scoped out (Notion, a push relay, the Mac App Store), and the milestone plan.
+Inbox & Chill is distributed under the [MIT licence](LICENSE). Copyright © 2026 Brandon Lucas Green. The upstream project and original brand attribution are preserved.
