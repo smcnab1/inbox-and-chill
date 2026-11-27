@@ -78,6 +78,8 @@ xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill test
 
 The tests use an in-memory app store and temporary fixtures. Use the signing flags in [CI](../.github/workflows/ci.yml) when building without a Developer ID certificate.
 
-## 6. Preview first-run testing
+## 6. Repeat first-run testing
 
-Use a disposable test installation. Run `scripts/reset-first-run.sh --dry-run` to inspect the cleanup the script would perform. The script targets the current user’s local app state, so use a separate macOS user when you need a clean first launch alongside a daily installation.
+Use a disposable macOS account. Run `scripts/reset-first-run.sh --dry-run` to preview the reset. Then run `scripts/reset-first-run.sh` and type `reset` if you are ready to delete that account’s local queue and archive, app preferences and saved tokens. The script also attempts to reset the app’s Automation permission. Reopen the installed app to repeat first-run testing.
+
+The reset retains notification permission. Use a fresh macOS account to test that prompt.

@@ -57,6 +57,8 @@ The iPhone companion shows **GitHub, Linear, ntfy and Local coding agents**. Mac
 
 With Xcode and [Homebrew](https://brew.sh/) available, clone the fork and build the direct target. The installer validates the build, places it in `/Applications` and launches it. Xcode 26 requires macOS 15.6 or later on the build Mac.
 
+The example defaults to ad-hoc signing and requires no Apple Developer membership. Before running it over an installation signed with your own certificate, export `INCHILL_SIGNING_IDENTITY` with the exact identity you used and `INCHILL_DEVELOPMENT_TEAM` with its Team ID. The installer keeps the signature of the bundle you pass in.
+
 ```sh
 git clone https://github.com/smcnab1/inbox-and-chill.git
 cd inbox-and-chill
@@ -64,11 +66,12 @@ brew install xcodegen
 xcodegen generate
 xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
   -configuration Release -destination 'platform=macOS' -derivedDataPath build/companion-mac \
-  CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= OTHER_CODE_SIGN_FLAGS=--timestamp=none build
+  CODE_SIGN_IDENTITY="${INCHILL_SIGNING_IDENTITY:--}" \
+  DEVELOPMENT_TEAM="${INCHILL_DEVELOPMENT_TEAM:-}" OTHER_CODE_SIGN_FLAGS=--timestamp=none build
 scripts/install-local.sh --app 'build/companion-mac/Build/Products/Release/Inbox & Chill.app'
 ```
 
-The command uses local ad-hoc signing and requires no Apple Developer membership. macOS may ask for Keychain access again after a rebuild. If you already sign your local installation with your own identity, use that same identity for updates. The fork uses the original bundle identifier and the same application data paths. [Local build and testing notes](docs/testing-locally.md)
+With ad-hoc signing, macOS may ask for Keychain access again after a rebuild. The fork uses the original bundle identifier and the same application data paths. [Local build and testing notes](docs/testing-locally.md)
 
 ## iPhone companion
 
@@ -80,7 +83,7 @@ Archive and restore the shared queue, or use **Mark done** to apply the source�
 
 ## Update
 
-Fetch and review changes from this fork, then rebuild and run the Mac installer again. For the companion, rerun `scripts/install-companion-relay.sh` with your **existing HTTPS origin and port** and reopen the Home Screen app. Keeping the same origin and relay data preserves the pairing. The fork’s direct build has upstream Sparkle updates disabled. [Update instructions](companion/README.md#update-an-existing-install)
+Fetch and review changes from this fork, then [rebuild and install](#build-and-install) with your existing signing identity or the ad-hoc settings you already use. For the companion, rerun `scripts/install-companion-relay.sh` with your **existing HTTPS origin and port** and reopen the Home Screen app. Keeping the same origin and relay data preserves the pairing. The fork’s direct build has upstream Sparkle updates disabled. [Update instructions](companion/README.md#update-an-existing-install)
 
 ## Contribute
 
