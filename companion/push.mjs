@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { generateVAPIDKeys, sendNotification } from 'web-push';
 import { RequestError } from './inbox.mjs';
 
@@ -32,7 +33,9 @@ export function pushService(db, subject, send = sendNotification) {
     db.prepare("INSERT INTO settings VALUES ('vapid', ?)").run(record.value);
   }
   const keys = JSON.parse(record.value);
-  let previous;
+  const readCursor = db.prepare("SELECT value FROM settings WHERE name = 'push-cursor'");
+  const writeCursor = db.prepare("INSERT OR REPLACE INTO settings VALUES ('push-cursor', ?)");
+  const clearCursor = db.prepare("DELETE FROM settings WHERE name = 'push-cursor'");
   let running = false;
   async function deliver(device, payload) {
     try {
@@ -65,24 +68,28 @@ export function pushService(db, subject, send = sendNotification) {
           .prepare('SELECT * FROM devices WHERE subscription IS NOT NULL AND expires > ?')
           .all(Date.now());
         if (!devices.length) {
-          previous = undefined;
+          clearCursor.run();
           return;
         }
         const items = await inbox.items();
         const now = Date.now();
         const active = items.filter((item) => !item.archived && !(item.until > now));
+        const saved = readCursor.get();
+        const cursor = saved && JSON.parse(saved.value);
+        const previous = cursor && new Map(JSON.parse(cursor.rows));
+        const idOf = (item) => createHash('sha256').update(item.id).digest('hex');
         const fresh =
           previous &&
           active.some((item) => {
-            const old = previous.get(item.id);
+            const old = previous.get(idOf(item));
             return (
               (item.unread && (!old || item.time > old.time)) ||
-              (old?.until > old?.checked && old.until <= now)
+              (old?.until > cursor.checked && old.until <= now)
             );
           });
-        previous = new Map(
-          items.map((item) => [item.id, { time: item.time, until: item.until, checked: now }]),
-        );
+        const rows = JSON.stringify(items.map((item) => [idOf(item), {
+          time: item.time, until: item.until,
+        }]));
         if (fresh) {
           const payload = { count: active.filter((item) => item.unread).length };
           const results = await Promise.allSettled(
@@ -91,6 +98,9 @@ export function pushService(db, subject, send = sendNotification) {
           if (results.some((result) => result.status === 'rejected'))
             console.error('A push delivery failed. Check the device subscription.');
         }
+        // Advance after delivery attempts so an interrupted poll can replay it after restart.
+        if (fresh || rows !== cursor?.rows)
+          writeCursor.run(JSON.stringify({ checked: now, rows }));
       } finally {
         running = false;
       }

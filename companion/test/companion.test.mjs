@@ -160,13 +160,14 @@ test('push uses encrypted generic content, avoids seed floods, coalesces arrival
   }
   const calls = [];
   let gone = false;
-  const push = pushService(db, 'https://test.example', async (device, payload, options) => {
+  const send = async (device, payload, options) => {
     const req = generateRequestDetails(device, payload, options);
     assert.equal(req.headers['Content-Encoding'], 'aes128gcm');
     assert.ok(!req.body.includes(Buffer.from(payload)));
     calls.push(JSON.parse(payload));
     if (gone) throw Object.assign(new Error(), { statusCode: 410 });
-  });
+  };
+  const push = pushService(db, 'https://test.example', send);
   db.prepare('INSERT INTO devices VALUES (?, ?, ?)').run(
     'mock',
     Date.now() + 60000,
@@ -177,9 +178,14 @@ test('push uses encrypted generic content, avoids seed floods, coalesces arrival
   await push.poll(source);
   assert.equal(calls.length, 0);
   rows.push({ ...rows[0], id: 'ntfy:new', title: 'private title' });
-  await push.poll(source);
-  await push.poll(source);
+  const restarted = pushService(db, 'https://test.example', send);
+  assert.equal(restarted.publicKey, push.publicKey);
+  await assert.rejects(restarted.poll({ items: () => { throw new Error('Mac restarting'); } }));
+  await restarted.poll(source);
+  await restarted.poll(source);
   assert.deepEqual(calls, [{ count: 6 }]);
+  const cursor = db.prepare("SELECT value FROM settings WHERE name = 'push-cursor'").get().value;
+  assert.ok(!cursor.includes('ntfy:new') && !cursor.includes('private title'));
   gone = true;
   await assert.rejects(push.deliver(db.prepare('SELECT * FROM devices').get(), { test: true }), {
     status: 502,

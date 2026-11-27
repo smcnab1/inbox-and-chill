@@ -203,10 +203,15 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
         (origin.startsWith('https:') ? origin : 'mailto:companion@example.org'),
     );
     const server = companion({ db, origin, inbox, demo, push, port });
-    server.listen(port, '127.0.0.1', () =>
-      console.log((demo ? 'Sample inbox' : 'Mac inbox') + ' ready at ' + origin),
-    );
-    const timer = setInterval(() => push.poll(inbox).catch(() => {}), 15000);
+    const poll = () => push.poll(inbox).catch((error) => {
+      if (!(error instanceof RequestError && error.status === 503))
+        console.error('Could not check inbox activity.');
+    });
+    server.listen(port, '127.0.0.1', () => {
+      console.log((demo ? 'Sample inbox' : 'Mac inbox') + ' ready at ' + origin);
+      void poll();
+    });
+    const timer = setInterval(poll, 15000);
     server.on('close', () => clearInterval(timer));
   }
 }

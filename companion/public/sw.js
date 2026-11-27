@@ -42,7 +42,7 @@ self.addEventListener('push', (event) =>
           ? 'Your test notification arrived.'
           : 'Your private inbox has new activity.',
         icon: '/icon-192.png',
-        tag: 'inchill-inbox',
+        tag: data.test ? 'inchill-test' : 'inchill-inbox',
       });
       if (Number.isSafeInteger(data.count) && data.count >= 0 && navigator.setAppBadge) {
         await navigator.setAppBadge(data.count);
