@@ -49,7 +49,7 @@ To test on the Mac alone, run `npm run demo` without `ORIGIN` and open `http://1
 
 ## Update an existing install
 
-1. Fetch and review the fork’s latest changes. [Rebuild and install the same direct target](../README.md#build-and-install) with your usual signing identity.
+1. [Update your checkout and reinstall the direct Mac app](../README.md#update-the-mac-app) with your usual signing identity.
 2. From the updated checkout, rerun `scripts/install-companion-relay.sh` with the exact existing HTTPS origin, including its port. The installer replaces the relay and restarts its LaunchAgent. It keeps the live database and VAPID keys in place.
 3. Reopen the existing Home Screen app while connected to your tailnet. Refresh the inbox and, if you use push, send a test notification from **Settings**.
 

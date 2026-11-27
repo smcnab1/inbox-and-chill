@@ -57,6 +57,8 @@ The iPhone companion shows **GitHub, Linear, ntfy and Local coding agents**. Mac
 
 With Xcode and [Homebrew](https://brew.sh/) available, clone the fork and build the direct target. The installer validates the build, places it in `/Applications` and launches it. Xcode 26 requires macOS 15.6 or later on the build Mac.
 
+For an update from an existing checkout with XcodeGen installed, start at `xcodegen generate`.
+
 The example defaults to ad-hoc signing and requires no Apple Developer membership. Before running it over an installation signed with your own certificate, export `INCHILL_SIGNING_IDENTITY` with the exact identity you used and `INCHILL_DEVELOPMENT_TEAM` with its Team ID. The installer keeps the signature of the bundle you pass in.
 
 ```sh
@@ -83,7 +85,13 @@ Archive and restore the shared queue, or use **Mark done** to apply the sourceâ€
 
 ## Update
 
-Fetch and review changes from this fork, then [rebuild and install](#build-and-install) with your existing signing identity or the ad-hoc settings you already use. For the companion, rerun `scripts/install-companion-relay.sh` with your **existing HTTPS origin and port** and reopen the Home Screen app. Keeping the same origin and relay data preserves the pairing. The forkâ€™s direct build has upstream Sparkle updates disabled. [Update instructions](companion/README.md#update-an-existing-install)
+### Update the Mac app
+
+From a clean checkout on `main`, run `git fetch origin` and review the incoming commits with `git log --oneline HEAD..origin/main`. Then run `git merge --ff-only origin/main` to bring those commits into your checkout. [Rebuild and install](#build-and-install) with your existing signing identity or the ad-hoc settings you already use. The fork uses manual updates.
+
+### Update the iPhone companion
+
+From that updated checkout, rerun `scripts/install-companion-relay.sh` with your **existing HTTPS origin and port**, then reopen the Home Screen app. Keeping the same origin and relay data preserves the pairing. [Companion update steps](companion/README.md#update-an-existing-install)
 
 ## Contribute
 
