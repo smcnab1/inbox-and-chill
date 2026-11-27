@@ -12,8 +12,11 @@ const elem = (tag, text, className) => {
   if (className) node.className = className;
   return node;
 };
-const signal = (text) => {
+let messageTimer;
+const signal = (text, duration = 0) => {
+  clearTimeout(messageTimer);
   $('message').textContent = text;
+  if (duration) messageTimer = setTimeout(() => signal(''), duration);
 };
 function groupOf(item) {
   return item.archived ? 'Archive' : item.until > Date.now() ? 'Snoozed' : 'Inbox';
@@ -57,6 +60,7 @@ async function api(route, body) {
 }
 function unpaired() {
   revision++;
+  signal('');
   data = undefined;
   for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
   for (const id of ['rows', 'detail-content', 'repo', 'source', 'mode']) $(id).replaceChildren();
@@ -138,7 +142,8 @@ async function refresh(manual = false) {
     if (request !== revision) return;
     data = result;
     render();
-    if (manual || !$('retry').hidden) signal(manual ? 'Inbox refreshed.' : '');
+    if (manual) signal('Inbox refreshed.', 3500);
+    else if (!$('retry').hidden) signal('');
     $('retry').hidden = true;
   } catch (error) {
     if (request !== revision) return;
@@ -235,8 +240,9 @@ async function act(id, verb, until) {
         snooze: 'Snoozed.',
         restore: 'Restored.',
       };
-      signal(text[verb]);
-      if (['archive', 'done'].includes(verb)) {
+      const canUndo = ['archive', 'done'].includes(verb);
+      signal(text[verb], canUndo ? 10000 : 3500);
+      if (canUndo) {
         const undo = elem('button', 'Undo');
         undo.onclick = () => act(id, 'restore');
         $('message').append(undo);
@@ -368,7 +374,7 @@ $('signout').onclick = async () => {
   try {
     await api('sign-out', {});
     unpaired();
-    signal('Device unpaired.');
+    signal('Device unpaired.', 3500);
     await (await registration?.pushManager.getSubscription())?.unsubscribe();
   } catch (error) {
     if ($('preferences').open) $('push-info').textContent = error.message;

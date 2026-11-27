@@ -71,6 +71,10 @@ try {
         captureErrors.every((e) => engine === webkit && e.includes('Content Security Policy')),
       );
       if (name === 'small') continue;
+      await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+      const refreshed = page.getByText('Inbox refreshed.', { exact: true });
+      await refreshed.waitFor();
+      await refreshed.waitFor({ state: 'hidden' });
       await review.click();
       await page.getByRole('button', { name: 'Unpin', exact: true }).click();
       await page.getByText('Unpinned.', { exact: true }).waitFor();
@@ -105,7 +109,9 @@ try {
       await review.waitFor();
       await review.click();
       await page.getByRole('button', { name: 'Mark done', exact: true }).click();
-      await page.getByRole('button', { name: 'Undo', exact: true }).waitFor();
+      const undo = page.getByRole('button', { name: 'Undo', exact: true });
+      await undo.waitFor();
+      await undo.waitFor({ state: 'hidden', timeout: 16000 });
       await page.reload();
       await page.getByRole('button', { name: 'Archive', exact: true }).click();
       await review.click();
