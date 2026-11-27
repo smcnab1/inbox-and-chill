@@ -40,7 +40,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # Install native tools before CodeQL starts its Rosetta build tracer.
+      # Resolve tools and packages before CodeQL starts its Rosetta build tracer.
       - name: Prepare Swift build
         if: matrix.language == 'swift'
         env:
@@ -50,7 +50,10 @@ jobs:
           brew install xcodegen
           xcodegen generate
           # Swift build tracing requires Xcode 26 on macOS 26.
-          echo 'DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer' >> "$GITHUB_ENV"
+          export DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+          xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
+            -clonedSourcePackagesDirPath .spm -resolvePackageDependencies
 
       - uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
@@ -62,6 +65,7 @@ jobs:
         run: |
           xcodebuild -project InboxAndChill.xcodeproj -scheme InboxAndChill \
             -configuration Debug -destination 'platform=macOS,arch=arm64' \
+            -clonedSourcePackagesDirPath .spm -disableAutomaticPackageResolution -skipPackageUpdates \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=NO SWIFT_ENABLE_COMPILE_CACHE=NO \
             SWIFT_USE_INTEGRATED_DRIVER=NO build
