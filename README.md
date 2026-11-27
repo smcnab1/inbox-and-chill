@@ -83,15 +83,11 @@ The menu bar icon can show a total count, a high-signal-only count (the default)
 
 ## Install
 
-```sh
-brew install --cask brandonlucasgreen/tap/inbox-and-chill
-```
+This fork's companion-enabled Mac app is built and updated from this repository. Follow the [Mac install and private relay guide](companion/README.md#connect-the-live-mac-inbox). The upstream DMG, App Store build and Homebrew cask do not include the iPhone companion; don't use them to update this build.
 
-One command — it adds the tap and installs the app, and puts the `inchill` CLI on your `PATH`. `brew upgrade` keeps it current, and so does the app's own updater; they check the same feed and whichever gets there first wins. Already installed by hand? Add `--adopt` so brew takes over that copy instead of refusing to overwrite it.
+## iPhone companion
 
-Or download the `.dmg` from [the latest release](https://github.com/brandonlucasgreen/inbox-and-chill/releases/latest) and drag it to Applications. Both artifacts are notarized and stapled, so they open on a Mac that has never seen the app.
-
-More on the tap, and what `brew uninstall` cannot clean up, in [docs/homebrew.md](docs/homebrew.md).
+Install the optional PWA from Safari to triage the same GitHub, Linear, ntfy and local-agent queue on your iPhone. The free direct Mac build owns the live data and credentials. A separate sample inbox works before you connect any accounts. [Installation and private pairing](companion/README.md)
 
 ## Building
 
@@ -129,20 +125,7 @@ Three ways out, in order of how much you'll like them: sign with your own Develo
 
 The build also compiles and embeds the `inchill` CLI inside the app bundle (`Contents/MacOS/inchill`), signed with the same identity — see [docs/shell-integration.md](docs/shell-integration.md).
 
-**In-app updates, if you want them in your own build.** Sparkle verifies every
-download against a public key baked into the app, and this repo deliberately
-ships no key — so a fresh clone builds an app that says "no update-signing key"
-in Settings rather than one that discovers the problem mid-install. To wire up
-your own:
-
-```sh
-scripts/sparkle-keys.sh        # creates the keypair, prints the line to paste
-xcodegen generate
-```
-
-You will also need somewhere to serve an `appcast.xml` your build can reach, and
-`SUFeedURL` in `project.yml` pointed at it. None of this is needed just to use
-the app.
+**Companion updates are manual.** Build and reinstall from this repository. The direct companion build retains the original bundle identifier for local data compatibility, but does not start the upstream Sparkle updater.
 
 ## Contributing
 
@@ -151,14 +134,13 @@ clean Mac by GitHub Actions, alongside a shell-script lint and a full-history
 secret scan — see [docs/ci.md](docs/ci.md) for what each check is for, what it
 deliberately doesn't do, and what it costs.
 
-CI holds no signing credentials of any kind. Real signing, notarization and
-releases happen on a person's Mac, via `scripts/release.sh`.
+CI holds no signing credentials. The local companion build is installed manually, not published through the upstream release script.
 
 ## Status
 
 Built for one person's daily use first, and used that way every day. Three sources — GitLab, Trello and Asana — were written against their published APIs without a live account to test them on, and say so in their setup docs; if one misbehaves, [help@bgreen.lol](mailto:help@bgreen.lol) or an issue here is the fix.
 
-The code is MIT licensed and the repository is public as of 2026-08-21. In-app updates are live: 0.3.3 was the first release to carry Sparkle, so anything from 0.3.3 onwards updates itself. Installs older than that need one manual download to catch up. See [docs/releasing.md](docs/releasing.md) for how a release is cut, and [docs/homebrew.md](docs/homebrew.md) for the brew route.
+The code is MIT licensed.
 
 ## License
 

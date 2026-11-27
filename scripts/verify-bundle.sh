@@ -155,10 +155,9 @@ expect_plist ITSAppUsesNonExemptEncryption false
 expect_plist_present NSRemindersFullAccessUsageDescription
 
 if [ "$FLAVOR" = "direct" ]; then
-  # Sparkle reads both of these out of the bundle at runtime. Neither absence
-  # produces an error the user would connect to updates.
-  expect_plist SUFeedURL "https://raw.githubusercontent.com/brandonlucasgreen/inbox-and-chill/main/appcast.xml"
-  expect_plist_present SUPublicEDKey
+  expect_plist InchillManualUpdatesOnly true
+  expect_plist_absent SUFeedURL "the companion fork must not point at upstream releases"
+  expect_plist_absent SUPublicEDKey "the companion fork must not trust the upstream signing key"
   # Supplies the wording of the Automation consent prompt. Without it macOS
   # denies the Apple event outright instead of asking, and the denial looks
   # exactly like "nothing happened" (CLAUDE.md rule 2).
@@ -169,6 +168,7 @@ else
   # events, so the usage string would promise a prompt that can never come.
   expect_plist_absent SUFeedURL "the store build must not carry a Sparkle feed"
   expect_plist_absent SUPublicEDKey "the store build must not carry a Sparkle key"
+  expect_plist_absent InchillManualUpdatesOnly "the store manages its own updates"
   expect_plist_absent NSAppleEventsUsageDescription "nothing in the store build sends Apple events"
 fi
 

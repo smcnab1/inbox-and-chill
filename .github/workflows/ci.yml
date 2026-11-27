@@ -33,6 +33,30 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  companion:
+    name: Web companion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: companion
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:browser
+        env:
+          SCREENSHOTS: ${{ runner.temp }}/companion-screenshots
+      - uses: actions/upload-artifact@v7
+        with:
+          name: companion-screenshots
+          path: ${{ runner.temp }}/companion-screenshots
+          if-no-files-found: error
+
   # ---------------------------------------------------------------------
   # Cheap checks first, on Linux. These need no Xcode, finish in under a
   # minute, and cost a tenth of what a macOS minute costs.

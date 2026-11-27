@@ -84,6 +84,13 @@ struct GeneralPane: View {
             // be disabled would be UI about a feature the app does not have.
             // (Brandon, 2026-09-08, on seeing exactly that toggle.)
             #if !APP_STORE
+            Section("iPhone Companion") {
+                Toggle("Enable iPhone companion", isOn: $state.companionEnabled)
+                Text("Keep Local coding agents enabled in Sources and use Launch at login for daily use. The private relay is installed separately.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Link("Private relay setup", destination: URL(string: "https://github.com/smcnab1/inbox-and-chill/tree/main/companion")!)
+            }
             UpdatesSection()
             #else
             // The store is the checkout. With the mechanic off this is the

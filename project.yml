@@ -246,33 +246,9 @@ targets:
         # its own file for exactly that reason.)
         NSRemindersFullAccessUsageDescription: Inbox & Chill reads the reminders you're due so they queue up beside your other notifications. Dismissing one here does not complete it in Reminders.
 
-        # --- Sparkle in-app updates -----------------------------------------
-        # The feed must be fetchable with no credentials at all: Sparkle sends
-        # no headers and takes no token, for the appcast or for the zip it
-        # then downloads. That is the whole reason this repo is public — a
-        # private repo's release assets 404 for everyone but a collaborator,
-        # so there was nothing for Sparkle to fetch.
-        #
-        # raw.githubusercontent serves the committed appcast.xml directly, so
-        # there is no Pages build to enable and nothing to keep in sync. Its
-        # CDN caches for ~5 minutes, which is why a release you just cut is
-        # not offered instantly.
-        SUFeedURL: https://raw.githubusercontent.com/brandonlucasgreen/inbox-and-chill/main/appcast.xml
-        #
-        # The public half of the EdDSA keypair Sparkle verifies every download
-        # against. Generated 2026-08-21 by scripts/sparkle-keys.sh, which found
-        # a key already in the login keychain and reused it — one key covers
-        # every app you ship, and replacing it would strand anyone running a
-        # build that trusts the old one.
-        #
-        # The PRIVATE half stays in the login keychain and must never reach this
-        # repo. Lose it and you cannot ship an update existing installs accept.
-        #
-        # A clone without the matching private key can still build and run; it
-        # just cannot *publish* updates. A clone that removes this line gets an
-        # app that says so in Settings rather than one that fails mid-install
-        # (UpdateController.configurationProblem).
-        SUPublicEDKey: B7RS84O0N7JK6Fv3uqBMuD6+1Qo7mg8o9nbYMp1FLnc=
+        # This fork shares the original bundle ID to preserve local data, but
+        # must never offer upstream binaries that lack the companion bridge.
+        InchillManualUpdatesOnly: true
 
   # ---------------------------------------------------------------------
   # The Mac App Store build: the same tree with a shorter sources list, one

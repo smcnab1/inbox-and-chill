@@ -1,0 +1,25 @@
+{
+  "name": "inbox-and-chill-companion",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node server.mjs",
+    "demo": "node server.mjs --demo",
+    "pair": "node server.mjs --pair",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "node test/browser.mjs",
+    "pretest": "npm run build"
+  },
+  "dependencies": {
+    "web-push": "4.0.0"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}

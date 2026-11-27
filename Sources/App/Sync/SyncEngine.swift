@@ -162,18 +162,17 @@ actor SyncEngine {
         }
     }
 
-    func markDone(uid: String, sourceID: String, externalID: String, payload: Data?) async {
-        try? await store.markDone(uid: uid)
+    @discardableResult
+    func markDone(uid: String, sourceID: String, externalID: String, payload: Data?) async -> Bool {
         var failure: String?
-        if let connector = connectors[sourceID],
-            connector.capabilities.contains(.markDone) {
-            do {
+        do {
+            try await store.markDone(uid: uid)
+            if let connector = connectors[sourceID], connector.capabilities.contains(.markDone) {
                 try await connector.markDone(externalID: externalID, payload: payload)
-            } catch {
-                failure = String(describing: error)
             }
-        }
+        } catch { failure = String(describing: error) }
         notify(sourceID: sourceID, writeThroughFailure: failure)
+        return failure == nil
     }
 
     /// Finishes a to-do in its source, and marks the row done locally.
@@ -229,19 +228,47 @@ actor SyncEngine {
         notify(sourceID: sourceID, writeThroughFailure: failure)
     }
 
-    func snooze(uid: String, sourceID: String, externalID: String, until: Date, payload: Data?) async {
-        try? await store.snooze(uid: uid, until: until)
+    @discardableResult
+    func snooze(uid: String, sourceID: String, externalID: String, until: Date, payload: Data?) async -> Bool {
         var failure: String?
-        if let connector = connectors[sourceID],
-            connector.capabilities.contains(.remoteSnooze) {
-            do {
+        do {
+            try await store.snooze(uid: uid, until: until)
+            if let connector = connectors[sourceID], connector.capabilities.contains(.remoteSnooze) {
                 try await connector.snooze(externalID: externalID, until: until, payload: payload)
-            } catch {
-                failure = String(describing: error)
             }
-        }
+        } catch { failure = String(describing: error) }
         notify(sourceID: sourceID, writeThroughFailure: failure)
+        return failure == nil
     }
+
+    #if !APP_STORE
+    func companionSnapshot() async throws -> [CompanionItem] { try await store.companionItems() }
+
+    func applyCompanionAction(_ action: CompanionAction) async throws -> Int {
+        guard let row = try await store.companionTarget(action.id) else { return 404 }
+        switch action.verb {
+        case .read, .unread:
+            try await store.setSeen(uids: [row.uid], seen: action.verb == .read)
+        case .pin, .unpin:
+            try await store.setPinned(uids: [row.uid], pinned: action.verb == .pin)
+        case .archive:
+            try await store.markDone(uid: row.uid)
+        case .restore:
+            _ = try await store.undoDone(uid: row.uid)
+        case .done:
+            return await markDone(uid: row.uid, sourceID: row.sourceID,
+                externalID: row.externalID, payload: row.payload) ? 200 : 502
+        case .snooze:
+            guard let ms = action.until, ms.isFinite else { return 400 }
+            let date = Date(timeIntervalSince1970: ms / 1000)
+            guard date > .now, date.timeIntervalSinceNow <= 366 * 86400 else { return 400 }
+            return await snooze(uid: row.uid, sourceID: row.sourceID,
+                externalID: row.externalID, until: date, payload: row.payload) ? 200 : 502
+        }
+        notify(sourceID: row.sourceID)
+        return 200
+    }
+    #endif
 
     // MARK: Context
 
