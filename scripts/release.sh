@@ -46,6 +46,10 @@ die() { echo "error: $*" >&2; exit 1; }
 # --- Preconditions --------------------------------------------------------
 # Every one of these has a specific failure it prevents; none is ceremony.
 
+if grep -qE '^[[:space:]]*InchillManualUpdatesOnly: true$' project.yml; then
+  die "the companion fork uses manual updates. Install from source; this upstream release script expects a Sparkle feed."
+fi
+
 command -v gh >/dev/null 2>&1 || die "the GitHub CLI (gh) is not installed."
 gh auth status >/dev/null 2>&1 || die "gh is not authenticated — run: gh auth login"
 

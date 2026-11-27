@@ -267,6 +267,10 @@ extension UpdateController {
     /// `scripts/sparkle-keys.sh` builds and runs perfectly, and would only
     /// find out at install time that it cannot verify what it downloaded.
     nonisolated static func configurationProblem(info: [String: Any]?) -> String? {
+        if info?["InchillManualUpdatesOnly"] as? Bool == true {
+            return "Updates are manual for this companion build. Reinstall from the companion repository to keep iPhone support."
+        }
+
         func value(_ key: String) -> String? {
             guard
                 let string = info?[key] as? String,

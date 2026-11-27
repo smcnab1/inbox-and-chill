@@ -41,7 +41,7 @@ export function nativeInbox(discoveryFile) {
       if (error instanceof RequestError) throw error;
       throw new RequestError(
         503,
-        'Launch the Mac build with --web-companion and enable its Local source.',
+        'Open Inbox & Chill on your Mac. Enable the iPhone companion in General and Local coding agents in Sources.',
       );
     }
   }

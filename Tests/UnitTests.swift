@@ -2884,6 +2884,13 @@ struct UpdateConfigurationTests {
                 info: ["SUFeedURL": Self.feed, "SUPublicEDKey": Self.key]) == nil)
     }
 
+    @Test func companionBuildCannotStartSparkleEvenWithAnUpstreamFeed() throws {
+        let problem = try #require(UpdateController.configurationProblem(info: [
+            "InchillManualUpdatesOnly": true, "SUFeedURL": Self.feed, "SUPublicEDKey": Self.key,
+        ]))
+        #expect(problem.contains("Updates are manual"))
+    }
+
     /// The case a clone hits: `scripts/sparkle-keys.sh` has never been run, so
     /// the build has a feed but nothing to verify a download against. It must
     /// say so, and say what to run — not report a signature failure later,

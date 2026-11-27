@@ -117,7 +117,7 @@ actor LocalListener {
     private var companionToken = ""
     private var companionEngine: SyncEngine?
 
-    func useCompanionEngine(_ engine: SyncEngine) {
+    func setCompanionEngine(_ engine: SyncEngine?) {
         companionEngine = engine
     }
 

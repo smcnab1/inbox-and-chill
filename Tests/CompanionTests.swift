@@ -74,7 +74,7 @@ struct CompanionTests {
         let store = Store(modelContainer: container)
         let item = RemoteItem(externalID: "abc", kind: "codex_waiting", title: "Review on Mac", occurredAt: .now)
         _ = try await store.reconcile(snapshot: [item], sourceID: "agent", sourceKind: "local", remoteTruth: false)
-        await listener.useCompanionEngine(SyncEngine(store: store) { _ in })
+        let engine = SyncEngine(store: store) { _ in }
         let generation = try await listener.start(onNotify: { _ in }, onClear: { _ in })
         struct Info: Decodable { let port: Int; let token, companionToken: String }
         let info = try JSONDecoder().decode(Info.self, from: Data(contentsOf: file))
@@ -89,12 +89,19 @@ struct CompanionTests {
         do {
             #expect(try await call("/companion/items", info.token).1 == 401)
             #expect(try await call("/notify", info.companionToken, #"{"title":"test"}"#).1 == 401)
+            #expect(try await call("/companion/items", info.companionToken).1 == 503)
+            await listener.setCompanionEngine(engine)
             let (data, status) = try await call("/companion/items", info.companionToken)
             #expect(status == 200)
             #expect(String(decoding: data, as: UTF8.self).contains("codex_waiting"))
             #expect(try await call("/companion/action", info.companionToken,
                 #"{"id":"local:abc","verb":"archive"}"#).1 == 200)
             #expect(try await store.companionItems().first?.archived == true)
+            await listener.setCompanionEngine(nil)
+            #expect(try await call("/companion/action", info.companionToken,
+                #"{"id":"local:abc","verb":"restore"}"#).1 == 503)
+            #expect(try await store.companionItems().first?.archived == true)
+            #expect(try await call("/notify", info.token, #"{"title":"test"}"#).1 == 200)
         } catch {
             await listener.stop(generation: generation)
             throw error

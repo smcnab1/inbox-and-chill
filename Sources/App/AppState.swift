@@ -35,6 +35,19 @@ final class AppState {
     var undoStack: [[String]] = []
     var launchAtLoginError: String?
 
+    #if !APP_STORE
+    var companionEnabled = UserDefaults.standard.bool(forKey: "companion.enabled") {
+        didSet {
+            UserDefaults.standard.set(companionEnabled, forKey: "companion.enabled")
+            Task { await updateCompanionBridge() }
+        }
+    }
+
+    private func updateCompanionBridge() async {
+        await LocalListener.shared.setCompanionEngine(companionEnabled ? engine : nil)
+    }
+    #endif
+
     /// Why the last ⏎ landed somewhere other than where the item pointed.
     /// nil in the ordinary case, including the ordinary *fallbacks* — a
     /// session whose window has closed is not a problem to nag about. Set
@@ -158,14 +171,20 @@ final class AppState {
 
     init() {
         do {
-            let url = URL.applicationSupportDirectory
-                .appending(path: "InboxAndChill/store.sqlite")
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true)
+            let configuration: ModelConfiguration
+            if DiagnosticsRecorder.isRunningTests {
+                configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+            } else {
+                let url = URL.applicationSupportDirectory
+                    .appending(path: "InboxAndChill/store.sqlite")
+                try FileManager.default.createDirectory(
+                    at: url.deletingLastPathComponent(),
+                    withIntermediateDirectories: true)
+                configuration = ModelConfiguration(url: url)
+            }
             container = try ModelContainer(
                 for: Item.self, SourceConfig.self, Topic.self,
-                configurations: ModelConfiguration(url: url))
+                configurations: configuration)
         } catch {
             fatalError("Cannot open store: \(error)")
         }
@@ -181,17 +200,11 @@ final class AppState {
         // not at launch (banners are opt-in; don't alert before the UI).
         notificationDelegate = NotificationDelegate(appState: self)
         UNUserNotificationCenter.current().delegate = notificationDelegate
-        // `xcodebuild test` runs this app as its test host, and the host
-        // shares the live `store.sqlite` with the installed app. Polling real
-        // sources — or the fake one — from a test run wrote rows into the
-        // queue Brandon actually uses (2026-09-04). Under tests the app stays
-        // inert: the tests build their own stores and connectors.
+        // The test host must not poll real sources or start local listeners.
         guard !DiagnosticsRecorder.isRunningTests else { return }
         Task {
             #if !APP_STORE
-            if CommandLine.arguments.contains("--web-companion") {
-                await LocalListener.shared.useCompanionEngine(engine)
-            }
+            await updateCompanionBridge()
             #endif
             await bootstrapConnectors()
             await refreshBadge()
