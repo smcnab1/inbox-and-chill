@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a problem with Inbox & Chill or its iPhone companion
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This report is public. [Report security issues privately](https://github.com/smcnab1/inbox-and-chill/security/advisories/new).
+        Use fictional inbox items and remove credentials, pairing codes, private host names and message content from attachments.
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: What happened?
+      description: Describe what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Build or commit and system versions
+      description: Include macOS and, for companion issues, iOS and Node.js on the Mac.
+  - type: textarea
+    id: details
+    attributes:
+      label: Relevant source, screenshots or logs
+      description: Share only sanitised details.

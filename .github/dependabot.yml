@@ -15,3 +15,16 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /companion
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      companion-routine:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

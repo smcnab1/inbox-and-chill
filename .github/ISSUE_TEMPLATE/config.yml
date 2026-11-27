@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability reporting
+    url: https://github.com/smcnab1/inbox-and-chill/security/advisories/new
+    about: Report security vulnerabilities privately.
+  - name: Original Inbox & Chill project
+    url: https://github.com/brandonlucasgreen/inbox-and-chill
+    about: Check the upstream project for shared Mac features or existing reports.
